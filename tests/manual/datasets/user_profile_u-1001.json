@@ -1,0 +1,13 @@
+{
+  "user_id": "u-1001",
+  "email": "contact.zampieri@gmail.com",
+  "profile": {
+    "risk_profile": "moderado",
+    "monthly_income": 6500.0,
+    "goal": {
+      "type": "reserva_emergencia",
+      "target_amount": 10000.0,
+      "monthly_investment": 500.0
+    }
+  }
+}

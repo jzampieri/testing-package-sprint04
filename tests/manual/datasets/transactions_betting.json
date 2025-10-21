@@ -1,0 +1,29 @@
+{
+  "user_id": "u-1001",
+  "transactions": [
+    {
+      "date": "2025-10-02",
+      "merchant": "Mercado",
+      "amount": 420.0,
+      "betting_vendor": false
+    },
+    {
+      "date": "2025-10-05",
+      "merchant": "ApostaOnline",
+      "amount": 150.0,
+      "betting_vendor": true
+    },
+    {
+      "date": "2025-10-12",
+      "merchant": "ApostaOnline",
+      "amount": 200.0,
+      "betting_vendor": true
+    },
+    {
+      "date": "2025-10-15",
+      "merchant": "Restaurante",
+      "amount": 89.0,
+      "betting_vendor": false
+    }
+  ]
+}

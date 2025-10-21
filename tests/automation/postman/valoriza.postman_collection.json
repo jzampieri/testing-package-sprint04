@@ -1,0 +1,329 @@
+{
+  "info": {
+    "_postman_id": "84b46d2e-valoriza-collection",
+    "name": "Valoriza API - Test Suite",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exported_using": "ChatGPT Valoriza Testing Generator"
+  },
+  "item": [
+    {
+      "name": "01 - Auth Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"{{email}}\", \"password\": \"{{password}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('tem access_token', () => pm.expect(json.access_token).to.be.a('string'));",
+              "pm.environment.set('token', json.access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Open Finance - Create Consent",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/openfinance/consents",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "openfinance",
+            "consents"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"bank\": \"{{bank}}\", \"consentId\": \"{{consentId}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "const j = pm.response.json();",
+              "pm.test('consent criado/ativo', () => pm.expect(j.active).to.be.oneOf([true, 'true']));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Open Finance - Get Accounts",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/openfinance/accounts",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "openfinance",
+            "accounts"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "const a = pm.response.json();",
+              "pm.test('tem contas', () => pm.expect((a.accounts||[]).length).to.be.above(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Transactions Ingest & Risk",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/transactions/ingest",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "transactions",
+            "ingest"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"user_id\": \"{{user_id}}\", \"transactions\": [{\"date\": \"2025-10-02\", \"merchant\": \"Mercado\", \"amount\": 420.0, \"betting_vendor\": false}, {\"date\": \"2025-10-05\", \"merchant\": \"ApostaOnline\", \"amount\": 150.0, \"betting_vendor\": true}, {\"date\": \"2025-10-12\", \"merchant\": \"ApostaOnline\", \"amount\": 200.0, \"betting_vendor\": true}]}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "// após ingestão, consultar risco",
+              "pm.sendRequest({",
+              "  url: pm.environment.get('base_url') + '/risk/current?user_id=' + pm.environment.get('user_id'),",
+              "  method: 'GET',",
+              "  header: {'Authorization':'Bearer ' + pm.environment.get('token')}",
+              "}, (err, res) => {",
+              "  pm.test('risk endpoint 200', () => pm.expect(res.code).to.eql(200));",
+              "  const r = res.json();",
+              "  pm.test('Risco Médio', () => pm.expect(r.level).to.eql('Médio'));",
+              "  pm.test('reasons contém apostas', () => {",
+              "    pm.expect(r.reasons).to.include.members(['freq_apostas_7d','gasto_apostas_30d']);",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Alerts Feed",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/alerts?user_id={{user_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "alerts"
+          ],
+          "query": [
+            {
+              "key": "user_id",
+              "value": "{{user_id}}"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const j = pm.response.json();",
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Alerta comportamento apostas Médio com CTA', () => {",
+              "  const al = j.find(a => a.type === 'comportamento_apostas');",
+              "  pm.expect(al).to.be.an('object');",
+              "  pm.expect(al.severity).to.eql('Médio');",
+              "  pm.expect(al.cta).to.match(/plano anti-impulso/i);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Education & XAI",
+      "item": [
+        {
+          "name": "6a - Recommended Lessons",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/education/recommended?user_id={{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "education",
+                "recommended"
+              ],
+              "query": [
+                {
+                  "key": "user_id",
+                  "value": "{{user_id}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('tem >= 2 aulas', () => pm.expect(j.lessons.length).to.be.at.least(2));",
+                  "pm.test('prioriza reserva e impulsos', () => {",
+                  "  const labels = j.lessons.map(l => (l.title||'').toLowerCase());",
+                  "  pm.expect(labels.join('|')).to.match(/reserva de emergência/);",
+                  "  pm.expect(labels.join('|')).to.match(/controle de impulsos/);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6b - XAI Explanations (SHAP)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/xai/explanations?user_id={{user_id}}&context=risk",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "xai",
+                "explanations"
+              ],
+              "query": [
+                {
+                  "key": "user_id",
+                  "value": "{{user_id}}"
+                },
+                {
+                  "key": "context",
+                  "value": "risk"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('tem shap_values e top_contributors', () => {",
+                  "  pm.expect(j.shap_values).to.be.an('array');",
+                  "  pm.expect(j.top_contributors).to.be.an('array').that.is.not.empty;",
+                  "});",
+                  "pm.test('freq_apostas_7d é destaque', () => {",
+                  "  pm.expect(j.top_contributors).to.include('freq_apostas_7d');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
